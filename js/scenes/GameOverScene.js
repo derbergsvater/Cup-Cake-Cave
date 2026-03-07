@@ -74,17 +74,29 @@ class GameOverScene extends Phaser.Scene {
         btnZone.on('pointerout', () => this.drawBtn(btnBg, 0xFF69B4));
         btnZone.on('pointerdown', () => this.restartGame());
 
-        // Zum Menü
-        const menuBtn = this.add.text(400, 445, 'Zum Menu (Schwierigkeit andern)', {
-            fontSize: '14px', fontFamily: 'monospace',
-            color: '#FFB6C1', stroke: '#000', strokeThickness: 2
-        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-        menuBtn.on('pointerover', () => menuBtn.setColor('#FFFFFF'));
-        menuBtn.on('pointerout', () => menuBtn.setColor('#FFB6C1'));
-        menuBtn.on('pointerdown', () => this.scene.start('MenuScene'));
+        // Zum Menü - Button
+        const menuBtnBg = this.add.graphics();
+        this.drawMenuBtn(menuBtnBg, 0x8B4513);
 
-        // Space zum Neustarten
+        this.add.text(400, 455, 'HAUPTMENU', {
+            fontSize: '20px', fontFamily: 'Georgia, serif',
+            color: '#FFFFFF', stroke: '#000', strokeThickness: 3
+        }).setOrigin(0.5);
+
+        const menuZone = this.add.zone(400, 455, 220, 44).setInteractive({ useHandCursor: true });
+        menuZone.on('pointerover', () => this.drawMenuBtn(menuBtnBg, 0xA0522D));
+        menuZone.on('pointerout', () => this.drawMenuBtn(menuBtnBg, 0x8B4513));
+        menuZone.on('pointerdown', () => this.goToMenu());
+
+        // Tastatur-Shortcuts
         this.input.keyboard.on('keydown-SPACE', () => this.restartGame());
+        this.input.keyboard.on('keydown-ESC', () => this.goToMenu());
+        this.input.keyboard.on('keydown-M', () => this.goToMenu());
+
+        this.add.text(400, 490, 'LEERTASTE = Nochmal  |  M / ESC = Hauptmenu', {
+            fontSize: '11px', fontFamily: 'monospace',
+            color: '#999999', stroke: '#000', strokeThickness: 1
+        }).setOrigin(0.5);
 
         // Fallende Streusel
         this.time.addEvent({
@@ -114,11 +126,24 @@ class GameOverScene extends Phaser.Scene {
         bg.strokeRoundedRect(275, 370, 250, 50, 12);
     }
 
+    drawMenuBtn(bg, color) {
+        bg.clear();
+        bg.fillStyle(color);
+        bg.fillRoundedRect(290, 433, 220, 44, 12);
+        bg.lineStyle(2, 0xFFD700);
+        bg.strokeRoundedRect(290, 433, 220, 44, 12);
+    }
+
     restartGame() {
         window.audioManager.init();
         window.audioManager.resume();
         window.audioManager.startMusic();
         this.scene.start('GameScene', { difficulty: this.difficulty });
+    }
+
+    goToMenu() {
+        window.audioManager.stopMusic();
+        this.scene.start('MenuScene');
     }
 }
 
