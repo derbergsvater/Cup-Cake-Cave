@@ -28,7 +28,7 @@ class MenuScene extends Phaser.Scene {
         titleBg.fillStyle(0x000000, 0.5);
         titleBg.fillRoundedRect(100, 50, 600, 100, 20);
 
-        this.add.text(400, 78, 'Die Cup-Cake-Hohlen', {
+        this.add.text(400, 78, 'Die Cup-Cake-Höhlen', {
             fontSize: '42px', fontFamily: 'Georgia, serif',
             color: '#FFD700', stroke: '#8B4513', strokeThickness: 6,
             shadow: { offsetX: 3, offsetY: 3, color: '#000', blur: 5, fill: true }

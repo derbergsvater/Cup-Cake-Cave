@@ -1,6 +1,6 @@
-# Die Cup-Cake-Hohlen
+# Die Cup-Cake-Höhlen
 
-Ein buntes 2D-Jump'n'Run-Browsergame! Steuere ein Lama durch eine fantastische Hohle, die wie ein Cup-Cake aussieht.
+Ein buntes 2D-Jump'n'Run-Browsergame! Steuere ein Lama durch eine fantastische Höhle, die wie ein Cup-Cake aussieht.
 
 ## Schnellstart
 
@@ -30,7 +30,7 @@ Dann im Browser `http://localhost:8000` offnen.
 ## Spielmechaniken
 
 ### Gegner
-- **Zuckerfliegen** - Fliegen durch die Hohle. Von oben draufspringen = fressen (+10 Punkte). Seitlicher Kontakt = Schaden.
+- **Zuckerfliegen** - Fliegen durch die Höhle. Von oben draufspringen = fressen (+10 Punkte). Seitlicher Kontakt = Schaden.
 - **Cup-Cake-Baren** - Werfen Cupcakes als Projektile. Von oben draufspringen = besiegen (+25 Punkte). Ausweichen!
 
 ### Power-ups
