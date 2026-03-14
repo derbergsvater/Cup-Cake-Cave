@@ -12,6 +12,7 @@ class AssetGenerator {
         this.createSugarFly(scene);
         this.createCupcakeBear(scene);
         this.createCupcakeProjectile(scene);
+        this.createLlamaSpit(scene);
         this.createPowerUps(scene);
         this.createBackgrounds(scene);
         this.createParticle(scene);
@@ -367,6 +368,18 @@ class AssetGenerator {
         g.fillStyle(0xFF0000);
         g.fillCircle(10, 4, 3);
         g.generateTexture('cupcake_proj', 20, 20);
+        g.destroy();
+    }
+
+    static createLlamaSpit(scene) {
+        const g = scene.make.graphics({ add: false });
+        g.fillStyle(0x8EF3FF);
+        g.fillCircle(8, 8, 7);
+        g.fillStyle(0xD7FCFF);
+        g.fillCircle(10, 6, 3);
+        g.lineStyle(2, 0x4ACCE0, 0.8);
+        g.strokeCircle(8, 8, 7);
+        g.generateTexture('llama_spit', 16, 16);
         g.destroy();
     }
 

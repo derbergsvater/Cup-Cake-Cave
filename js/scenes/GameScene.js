@@ -36,6 +36,13 @@ class GameScene extends Phaser.Scene {
         this.walkFrame = 0;
         this.walkTimer = 0;
         this.maxPlayerX = 0; // Weiteste Position (für Distanz)
+        this.currentPlayerTexture = 'llama';
+        this.lastDistanceMeters = -1;
+        this.lastShownScore = -1;
+        this.cleanupAccumulator = 0;
+        this.spitCooldownMs = 450;
+        this.spitCooldown = 0;
+        this.lastSpitStatus = '';
 
         // Zonen
         this.currentZone = 0;
@@ -59,7 +66,7 @@ class GameScene extends Phaser.Scene {
         this.physics.world.setBounds(0, 0, 999999, 600);
 
         // Hintergrund (scrollt per TileSprite)
-        this.bgLayer = this.add.image(400, 300, 'bg_pink').setScrollFactor(0).setDepth(-10);
+        this.bgLayer = this.add.image(400, 300, 'bg_pink').setScrollFactor(0).setDepth(-10).setAlpha(0.92);
 
         // Gruppen
         this.groundGroup = this.physics.add.staticGroup();
@@ -70,6 +77,7 @@ class GameScene extends Phaser.Scene {
         this.sugarFlies = this.physics.add.group();
         this.cupcakeBears = this.physics.add.group();
         this.projectiles = this.physics.add.group();
+        this.llamaSpits = this.physics.add.group();
         this.powerUps = this.physics.add.group();
         this.stalactites = this.physics.add.group();
         this.tunnelZones = this.physics.add.staticGroup();
@@ -120,12 +128,18 @@ class GameScene extends Phaser.Scene {
         this.physics.add.overlap(this.player, this.powerUps, this.collectPowerUp, null, this);
         this.physics.add.overlap(this.player, this.cupcakeBears, this.hitBear, null, this);
         this.physics.add.overlap(this.player, this.tunnelZones, this.enterTunnel, null, this);
+        this.physics.add.overlap(this.llamaSpits, this.sugarFlies, this.hitEnemyWithSpit, null, this);
+        this.physics.add.overlap(this.llamaSpits, this.cupcakeBears, this.hitEnemyWithSpit, null, this);
+        this.physics.add.overlap(this.llamaSpits, this.obstacles, this.hitObstacleWithSpit, null, this);
+        this.physics.add.overlap(this.llamaSpits, this.projectiles, this.hitProjectileWithSpit, null, this);
+        this.physics.add.overlap(this.llamaSpits, this.stalactites, this.hitStalactiteWithSpit, null, this);
 
         // Steuerung
         this.cursors = this.input.keyboard.createCursorKeys();
         this.keyA = this.input.keyboard.addKey('A');
         this.keyD = this.input.keyboard.addKey('D');
         this.keyW = this.input.keyboard.addKey('W');
+        this.keyF = this.input.keyboard.addKey('F');
         this.spaceBar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
         // Touch-Steuerung fuer Mobilgeraete
@@ -133,6 +147,7 @@ class GameScene extends Phaser.Scene {
         this.touchRight = false;
         this.touchJump = false;
         this.touchJumpJustPressed = false;
+        this.touchSpitJustPressed = false;
         this.isMobile = !this.sys.game.device.os.desktop;
         if (this.isMobile) this.createTouchControls();
 
@@ -144,6 +159,7 @@ class GameScene extends Phaser.Scene {
         // HUD
         this.createHUD();
         this.showZoneAnnouncement(this.zones[0].name);
+        this.zoneText.setText(this.zones[0].name);
 
         // Start-Spruch
         this.time.delayedCall(500, () => {
@@ -203,47 +219,58 @@ class GameScene extends Phaser.Scene {
 
     createHUD() {
         const hudBg = this.add.graphics();
-        hudBg.fillStyle(0x000000, 0.4);
-        hudBg.fillRoundedRect(5, 5, 250, 80, 8);
+        hudBg.fillStyle(0x08060F, 0.58);
+        hudBg.fillRoundedRect(8, 8, 280, 92, 12);
+        hudBg.lineStyle(1, 0xFFD166, 0.9);
+        hudBg.strokeRoundedRect(8, 8, 280, 92, 12);
         hudBg.setDepth(100).setScrollFactor(0);
 
-        this.scoreText = this.add.text(15, 10, 'Punkte: 0', {
-            fontSize: '20px', fontFamily: 'monospace',
-            color: '#FFD700', stroke: '#000', strokeThickness: 2
+        this.scoreText = this.add.text(20, 14, 'Punkte: 0', {
+            fontSize: '23px', fontFamily: '"Baloo 2"',
+            color: '#FFE3B0', stroke: '#000', strokeThickness: 2
         }).setDepth(100).setScrollFactor(0);
 
-        this.livesText = this.add.text(15, 35, '', {
-            fontSize: '16px', fontFamily: 'monospace',
-            color: '#FF69B4', stroke: '#000', strokeThickness: 2
+        this.livesText = this.add.text(20, 43, '', {
+            fontSize: '16px', fontFamily: 'Outfit',
+            color: '#FF9DC8', stroke: '#000', strokeThickness: 2
         }).setDepth(100).setScrollFactor(0);
         this.updateLivesDisplay();
 
-        this.powerUpText = this.add.text(15, 58, '', {
-            fontSize: '13px', fontFamily: 'monospace',
-            color: '#00FFFF', stroke: '#000', strokeThickness: 2
+        this.powerUpText = this.add.text(20, 69, '', {
+            fontSize: '13px', fontFamily: 'Outfit',
+            color: '#9FE8FF', stroke: '#000', strokeThickness: 2
         }).setDepth(100).setScrollFactor(0);
 
         const rightBg = this.add.graphics();
-        rightBg.fillStyle(0x000000, 0.4);
-        rightBg.fillRoundedRect(545, 5, 250, 55, 8);
+        rightBg.fillStyle(0x08060F, 0.58);
+        rightBg.fillRoundedRect(520, 8, 272, 82, 12);
+        rightBg.lineStyle(1, 0xFFD166, 0.9);
+        rightBg.strokeRoundedRect(520, 8, 272, 82, 12);
         rightBg.setDepth(100).setScrollFactor(0);
 
-        this.distanceText = this.add.text(785, 12, 'Distanz: 0m', {
-            fontSize: '16px', fontFamily: 'monospace',
+        this.distanceText = this.add.text(780, 14, 'Distanz: 0m', {
+            fontSize: '17px', fontFamily: 'Outfit',
             color: '#FFFFFF', stroke: '#000', strokeThickness: 2
         }).setOrigin(1, 0).setDepth(100).setScrollFactor(0);
 
-        this.zoneText = this.add.text(785, 34, '', {
-            fontSize: '13px', fontFamily: 'monospace',
-            color: '#FFB6C1', stroke: '#000', strokeThickness: 2
+        this.zoneText = this.add.text(780, 39, '', {
+            fontSize: '13px', fontFamily: 'Outfit',
+            color: '#FFB6D7', stroke: '#000', strokeThickness: 2
+        }).setOrigin(1, 0).setDepth(100).setScrollFactor(0);
+
+        this.spitText = this.add.text(780, 58, '', {
+            fontSize: '12px', fontFamily: 'Outfit',
+            color: '#A8F5FF', stroke: '#000', strokeThickness: 2
         }).setOrigin(1, 0).setDepth(100).setScrollFactor(0);
 
         const diffColors = { einfach: '#6BCB77', mittel: '#FFD700', schwer: '#FF4040' };
-        this.add.text(785, 50, this.diff.label, {
-            fontSize: '11px', fontFamily: 'monospace',
+        this.add.text(780, 74, this.diff.label, {
+            fontSize: '11px', fontFamily: 'Outfit',
             color: diffColors[this.difficulty] || '#FFFFFF',
             stroke: '#000', strokeThickness: 2
         }).setOrigin(1, 0).setDepth(100).setScrollFactor(0);
+
+        this.updateSpitStatusText();
     }
 
     createTouchControls() {
@@ -278,12 +305,22 @@ class GameScene extends Phaser.Scene {
             fontSize: '36px', color: '#FFFFFF'
         }).setOrigin(0.5).setDepth(btnDepth + 1).setScrollFactor(0).setAlpha(0.6);
 
+        const btnSpit = this.add.graphics();
+        btnSpit.fillStyle(0x61D8F0, btnAlpha);
+        btnSpit.fillCircle(640, 515, 35);
+        btnSpit.setDepth(btnDepth).setScrollFactor(0);
+        const lblSpit = this.add.text(640, 515, '\uD83D\uDCA6', {
+            fontSize: '28px', fontFamily: 'Outfit', color: '#FFFFFF'
+        }).setOrigin(0.5).setDepth(btnDepth + 1).setScrollFactor(0).setAlpha(0.8);
+
         // Unsichtbare interaktive Zonen fuer Touch
         const zoneLeft = this.add.zone(45, 515, 80, 80)
             .setScrollFactor(0).setDepth(btnDepth + 2).setInteractive();
         const zoneRight = this.add.zone(125, 515, 80, 80)
             .setScrollFactor(0).setDepth(btnDepth + 2).setInteractive();
         const zoneJump = this.add.zone(730, 515, 100, 100)
+            .setScrollFactor(0).setDepth(btnDepth + 2).setInteractive();
+        const zoneSpit = this.add.zone(640, 515, 80, 80)
             .setScrollFactor(0).setDepth(btnDepth + 2).setInteractive();
 
         // Touch-Events
@@ -303,8 +340,15 @@ class GameScene extends Phaser.Scene {
         zoneJump.on('pointerup', () => { this.touchJump = false; btnJump.setAlpha(1); });
         zoneJump.on('pointerout', () => { this.touchJump = false; btnJump.setAlpha(1); });
 
+        zoneSpit.on('pointerdown', () => {
+            this.touchSpitJustPressed = true;
+            btnSpit.setAlpha(0.7);
+        });
+        zoneSpit.on('pointerup', () => { btnSpit.setAlpha(1); });
+        zoneSpit.on('pointerout', () => { btnSpit.setAlpha(1); });
+
         // Multi-Touch aktivieren
-        this.input.addPointer(2);
+        this.input.addPointer(3);
     }
 
     showZoneAnnouncement(name) {
@@ -360,23 +404,19 @@ class GameScene extends Phaser.Scene {
 
     generateChunk(startX) {
         const zone = this.getZoneAt(startX);
-
-        // Boden
-        for (let x = startX; x < startX + this.chunkSize; x += 64) {
-            this.groundGroup.create(x, 576, zone.ground);
-            const c = this.ceilingGroup.create(x, 16, zone.ground);
-            c.setFlipY(true);
-        }
+        let gapX = null;
 
         // Bodenluecken (ab 2. Chunk, Schwierigkeitsabhaengig)
         if (startX > 800 && Math.random() < this.diff.enemyDensity * 0.3) {
-            const gapX = startX + Phaser.Math.Between(200, 600);
-            // Lücke: 2 Boden-Tiles entfernen
-            this.groundGroup.getChildren().forEach(t => {
-                if (t.x >= gapX && t.x < gapX + 128 && t.y > 500) {
-                    t.destroy();
-                }
-            });
+            gapX = startX + Phaser.Math.Between(200, 600);
+        }
+
+        // Boden
+        for (let x = startX; x < startX + this.chunkSize; x += 64) {
+            if (gapX !== null && x >= gapX && x < gapX + 128) continue;
+            this.groundGroup.create(x, 576, zone.ground);
+            const c = this.ceilingGroup.create(x, 16, zone.ground);
+            c.setFlipY(true);
         }
 
         // Plattformen - mit Ueberlappungspruefung
@@ -676,7 +716,11 @@ class GameScene extends Phaser.Scene {
         this.updateCooldowns(delta);
         this.updateZone();
         this.updateTunnel();
-        this.cleanupFarAway();
+        this.cleanupAccumulator += delta;
+        if (this.cleanupAccumulator >= 250) {
+            this.cleanupAccumulator = 0;
+            this.cleanupFarAway();
+        }
 
         // Level voraus generieren
         const camRight = this.cameras.main.scrollX + 900;
@@ -692,29 +736,37 @@ class GameScene extends Phaser.Scene {
             this.walkTimer = 0;
             this.walkFrame = 1 - this.walkFrame;
             if (onGround && isMoving) {
-                this.player.setTexture(this.walkFrame ? 'llama_walk' : 'llama');
+                const nextTex = this.walkFrame ? 'llama_walk' : 'llama';
+                if (this.currentPlayerTexture !== nextTex) {
+                    this.currentPlayerTexture = nextTex;
+                    this.player.setTexture(nextTex);
+                }
             } else if (onGround) {
-                this.player.setTexture('llama');
+                if (this.currentPlayerTexture !== 'llama') {
+                    this.currentPlayerTexture = 'llama';
+                    this.player.setTexture('llama');
+                }
             }
         }
 
         // Distanz (basiert auf weitester Position)
         this.maxPlayerX = Math.max(this.maxPlayerX, this.player.x);
         const distMeters = Math.floor(this.maxPlayerX / 50);
-        this.distanceText.setText('Distanz: ' + distMeters + 'm');
+        if (distMeters !== this.lastDistanceMeters) {
+            this.lastDistanceMeters = distMeters;
+            this.distanceText.setText('Distanz: ' + distMeters + 'm');
+        }
 
         // Score für Distanz
         const distScore = Math.floor(distMeters / 10);
         if (distScore > (this._lastDistScore || 0)) {
             this._lastDistScore = distScore;
             this.score += 5;
+        }
+        if (this.score !== this.lastShownScore) {
+            this.lastShownScore = this.score;
             this.scoreText.setText('Punkte: ' + this.score);
         }
-
-        // Hintergrund passend zur Zone
-        const zone = this.getZoneAt(this.player.x);
-        this.bgLayer.setTexture(zone.bg);
-        this.zoneText.setText(zone.name);
 
         // Absturz-Check (in Bodenlücke gefallen)
         if (this.player.y > 590) {
@@ -729,12 +781,13 @@ class GameScene extends Phaser.Scene {
         const zoneIdx = Math.floor(this.player.x / this.zoneLength) % this.zones.length;
         if (zoneIdx !== this.lastZoneIndex) {
             const zone = this.zones[zoneIdx];
+            this.bgLayer.setTexture(zone.bg);
+            this.zoneText.setText(zone.name);
             // Musik passend zur Zone wechseln
             window.audioManager.setZoneTrack(zone.track);
             if (this.lastZoneIndex >= 0) {
                 this.showZoneAnnouncement(zone.name);
                 this.score += 50;
-                this.scoreText.setText('Punkte: ' + this.score);
                 window.audioManager.playPowerUp();
                 window.audioManager.speakZone();
                 this.cameras.main.flash(400, 255, 255, 255, false);
@@ -777,6 +830,12 @@ class GameScene extends Phaser.Scene {
             }
         }
 
+        const kbSpit = Phaser.Input.Keyboard.JustDown(this.keyF);
+        if (kbSpit || this.touchSpitJustPressed) {
+            this.touchSpitJustPressed = false;
+            this.trySpit();
+        }
+
         if (this.isFlying) {
             this.player.body.gravity.y = -400;
             if (this.spaceBar.isDown || this.cursors.up.isDown || this.touchJump) {
@@ -789,26 +848,67 @@ class GameScene extends Phaser.Scene {
         }
     }
 
+    updateSpitStatusText() {
+        const ready = this.spitCooldown <= 0;
+        const seconds = Math.max(0, this.spitCooldown / 1000).toFixed(1);
+        const status = ready ? 'Spucke: bereit (F)' : `Spucke: ${seconds}s`;
+        if (status !== this.lastSpitStatus) {
+            this.lastSpitStatus = status;
+            this.spitText.setText(status);
+        }
+    }
+
+    trySpit() {
+        if (this.spitCooldown > 0 || !this.player || !this.player.active) return;
+        this.spitCooldown = this.spitCooldownMs;
+        this.updateSpitStatusText();
+
+        const dir = this.player.flipX ? -1 : 1;
+        const spit = this.llamaSpits.create(this.player.x + dir * 26, this.player.y - 12, 'llama_spit');
+        spit.body.allowGravity = false;
+        spit.setVelocityX(dir * 420);
+        spit.setSize(12, 12);
+        spit.setDepth(11);
+        spit.setAngularVelocity(480 * dir);
+        this.time.delayedCall(1200, () => { if (spit && spit.active) spit.destroy(); });
+
+        window.audioManager.playSpit();
+        if (Math.random() < 0.14) this.showSpeechBubble('Pffft!');
+    }
+
     updateEnemies(delta) {
         const camLeft = this.cameras.main.scrollX - 100;
         const camRight = this.cameras.main.scrollX + 900;
 
-        this.sugarFlies.getChildren().forEach(fly => {
+        const flies = this.sugarFlies.getChildren();
+        for (let i = 0; i < flies.length; i++) {
+            const fly = flies[i];
             if (fly.flyTime !== undefined) {
                 fly.flyTime += delta * 0.003 * fly.flySpeed;
                 fly.y = fly.flyBaseY + Math.sin(fly.flyTime) * fly.flyAmplitude;
                 fly.setAngle(Math.sin(fly.flyTime * 3) * 10);
             }
-        });
+        }
 
-        this.cupcakeBears.getChildren().forEach(bear => {
-            if (bear.x < camLeft || bear.x > camRight) return;
+        const bears = this.cupcakeBears.getChildren();
+        for (let i = 0; i < bears.length; i++) {
+            const bear = bears[i];
+            if (bear.x < camLeft || bear.x > camRight) continue;
             bear.shootTimer += delta;
             if (bear.shootTimer >= bear.shootInterval) {
                 bear.shootTimer = 0;
                 this.shootCupcake(bear);
             }
-        });
+        }
+
+        const powerUps = this.powerUps.getChildren();
+        for (let i = 0; i < powerUps.length; i++) {
+            const pu = powerUps[i];
+            if (pu.bobBaseY !== undefined) {
+                pu.bobTime += delta * 0.003;
+                pu.y = pu.bobBaseY + Math.sin(pu.bobTime) * pu.bobAmp;
+            }
+        }
     }
 
     shootCupcake(bear) {
@@ -818,7 +918,7 @@ class GameScene extends Phaser.Scene {
         const speed = this.diff.projSpeed;
         proj.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
         proj.setSize(14, 14);
-        this.tweens.add({ targets: proj, angle: 360, duration: 800, repeat: -1 });
+        proj.setAngularVelocity(360);
         this.time.delayedCall(4000, () => { if (proj && proj.active) proj.destroy(); });
     }
 
@@ -829,10 +929,9 @@ class GameScene extends Phaser.Scene {
         pu.body.allowGravity = false;
         pu.setSize(20, 20);
         pu.powerUpType = type;
-        this.tweens.add({
-            targets: pu, y: pu.y - 8, duration: 500,
-            yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
-        });
+        pu.bobBaseY = y;
+        pu.bobTime = Math.random() * Math.PI * 2;
+        pu.bobAmp = 8;
     }
 
     // === KOLLISIONS-HANDLER ===
@@ -933,6 +1032,42 @@ class GameScene extends Phaser.Scene {
         } else {
             this.takeDamage();
         }
+    }
+
+    hitEnemyWithSpit(spit, enemy) {
+        if (!spit.active || !enemy.active) return;
+        this.sparkleParticles.emitParticleAt(enemy.x, enemy.y, 8);
+        spit.destroy();
+        enemy.destroy();
+        this.score += enemy.texture && enemy.texture.key === 'cupcakebear' ? 25 : 10;
+        window.audioManager.playScore();
+    }
+
+    hitObstacleWithSpit(spit, obstacle) {
+        if (!spit.active || !obstacle.active) return;
+        this.sparkleParticles.emitParticleAt(obstacle.x, obstacle.y, 8);
+        spit.destroy();
+        obstacle.destroy();
+        this.score += 5;
+        window.audioManager.playBlockHit();
+    }
+
+    hitProjectileWithSpit(spit, proj) {
+        if (!spit.active || !proj.active) return;
+        this.sparkleParticles.emitParticleAt(proj.x, proj.y, 6);
+        spit.destroy();
+        proj.destroy();
+        this.score += 3;
+        window.audioManager.playScore();
+    }
+
+    hitStalactiteWithSpit(spit, st) {
+        if (!spit.active || !st.active) return;
+        this.sparkleParticles.emitParticleAt(st.x, st.y, 5);
+        spit.destroy();
+        st.destroy();
+        this.score += 4;
+        window.audioManager.playBlockHit();
     }
 
     takeDamage() {
@@ -1081,6 +1216,12 @@ class GameScene extends Phaser.Scene {
     }
 
     updateCooldowns(delta) {
+        if (this.spitCooldown > 0) {
+            this.spitCooldown -= delta;
+            if (this.spitCooldown <= 0) this.spitCooldown = 0;
+            this.updateSpitStatusText();
+        }
+
         if (this.hurtCooldown > 0) {
             this.hurtCooldown -= delta;
             this.player.setAlpha(Math.sin(this.hurtCooldown * 0.02) > 0 ? 1 : 0.3);
@@ -1115,7 +1256,7 @@ class GameScene extends Phaser.Scene {
 
         // Nur sehr weit entfernte Objekte aufräumen (hinter dem Spieler)
         [this.obstacles, this.sugarFlies, this.cupcakeBears,
-         this.projectiles, this.powerUps, this.stalactites, this.tunnelZones].forEach(group => {
+         this.projectiles, this.llamaSpits, this.powerUps, this.stalactites, this.tunnelZones].forEach(group => {
             group.getChildren().forEach(obj => {
                 if (obj.x < px - cleanDist || obj.y > 650) obj.destroy();
             });

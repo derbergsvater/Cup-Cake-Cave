@@ -12,105 +12,122 @@ class GameOverScene extends Phaser.Scene {
     }
 
     create() {
-        this.add.image(400, 300, 'bg_pink');
+        this.add.image(400, 300, 'bg_pink').setAlpha(0.5);
 
         const overlay = this.add.graphics();
-        overlay.fillStyle(0x000000, 0.6);
+        overlay.fillGradientStyle(0x120E1A, 0x120E1A, 0x1E1028, 0x1E1028, 0.9);
         overlay.fillRect(0, 0, 800, 600);
 
-        const box = this.add.graphics();
-        box.fillStyle(0x2a0a2a, 0.9);
-        box.fillRoundedRect(150, 80, 500, 440, 20);
-        box.lineStyle(4, 0xFF69B4);
-        box.strokeRoundedRect(150, 80, 500, 440, 20);
+        const glow = this.add.graphics();
+        glow.fillStyle(0xFF5EA8, 0.2);
+        glow.fillCircle(120, 110, 180);
+        glow.fillStyle(0x59D8FF, 0.13);
+        glow.fillCircle(680, 90, 160);
 
-        // Titel
-        this.add.text(400, 125, 'GAME OVER', {
-            fontSize: '48px', fontFamily: 'Georgia, serif',
-            color: '#FF1493', stroke: '#000', strokeThickness: 6,
-            shadow: { offsetX: 3, offsetY: 3, color: '#000', blur: 8, fill: true }
+        const box = this.add.graphics();
+        box.fillStyle(0x090711, 0.76);
+        box.fillRoundedRect(140, 72, 520, 456, 24);
+        box.lineStyle(2, 0xFFD166, 0.95);
+        box.strokeRoundedRect(140, 72, 520, 456, 24);
+
+        this.add.text(400, 128, 'GAME OVER', {
+            fontSize: '62px',
+            fontFamily: '"Baloo 2"',
+            fontStyle: '800',
+            color: '#FF6BAE',
+            stroke: '#61143A',
+            strokeThickness: 8,
+            shadow: { offsetX: 0, offsetY: 5, color: '#000', blur: 10, fill: true }
         }).setOrigin(0.5);
 
-        // Lama
-        const llama = this.add.image(400, 210, 'llama').setScale(2);
-        llama.setTint(0xAAAAAA);
+        const llama = this.add.image(400, 216, 'llama').setScale(2.2).setTint(0xB8B8B8);
         this.tweens.add({
-            targets: llama, angle: -5, duration: 500,
-            yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
+            targets: llama,
+            angle: 8,
+            y: 222,
+            duration: 680,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
         });
 
-        // Schwierigkeit
-        const diffColors = { einfach: '#6BCB77', mittel: '#FFD700', schwer: '#FF4040' };
+        const diffColors = { einfach: '#6BCB77', mittel: '#FFD166', schwer: '#FF5B6E' };
         const diffLabels = { einfach: 'Einfach', mittel: 'Mittel', schwer: 'Schwer' };
-        this.add.text(400, 270, diffLabels[this.difficulty] || 'Mittel', {
-            fontSize: '16px', fontFamily: 'monospace',
-            color: diffColors[this.difficulty] || '#FFD700',
-            stroke: '#000', strokeThickness: 2
+        this.add.text(400, 286, `Modus: ${diffLabels[this.difficulty] || 'Mittel'}`, {
+            fontSize: '18px',
+            fontFamily: 'Outfit',
+            fontStyle: '700',
+            color: diffColors[this.difficulty] || '#FFD166'
         }).setOrigin(0.5);
 
-        // Score
-        this.add.text(400, 300, 'Punkte: ' + this.finalScore, {
-            fontSize: '30px', fontFamily: 'Georgia, serif',
-            color: '#FFD700', stroke: '#000', strokeThickness: 4
+        this.add.text(400, 328, `Punkte ${this.finalScore}`, {
+            fontSize: '44px',
+            fontFamily: '"Baloo 2"',
+            fontStyle: '800',
+            color: '#FFE3B0'
         }).setOrigin(0.5);
 
-        // Distanz + Zonen
-        this.add.text(400, 338, 'Distanz: ' + this.finalDistance + 'm  |  Zonen: ' + this.zonesReached, {
-            fontSize: '16px', fontFamily: 'monospace',
-            color: '#87CEEB', stroke: '#000', strokeThickness: 2
+        this.add.text(400, 368, `Distanz ${this.finalDistance}m  |  Zonen ${this.zonesReached}`, {
+            fontSize: '16px',
+            fontFamily: 'Outfit',
+            fontStyle: '600',
+            color: '#CBE9FF'
         }).setOrigin(0.5);
 
-        // Nochmal-Button (gleiche Schwierigkeit)
-        const btnBg = this.add.graphics();
-        this.drawBtn(btnBg, 0xFF69B4);
-
-        this.add.text(400, 395, 'NOCHMAL!', {
-            fontSize: '28px', fontFamily: 'Georgia, serif',
-            color: '#FFFFFF', stroke: '#8B4513', strokeThickness: 3
+        const retryBg = this.add.graphics();
+        this.drawBtn(retryBg, 0xFF5EA8, 270, 406, 260, 56);
+        this.add.text(400, 434, 'NOCH EIN VERSUCH', {
+            fontSize: '28px',
+            fontFamily: '"Baloo 2"',
+            fontStyle: '800',
+            color: '#FFFFFF',
+            stroke: '#7D2B52',
+            strokeThickness: 4
         }).setOrigin(0.5);
 
-        const btnZone = this.add.zone(400, 395, 250, 50).setInteractive({ useHandCursor: true });
-        btnZone.on('pointerover', () => this.drawBtn(btnBg, 0xFF85C2));
-        btnZone.on('pointerout', () => this.drawBtn(btnBg, 0xFF69B4));
-        btnZone.on('pointerdown', () => this.restartGame());
+        const retryZone = this.add.zone(400, 434, 260, 56).setInteractive({ useHandCursor: true });
+        retryZone.on('pointerover', () => this.drawBtn(retryBg, 0xFF7FBE, 270, 406, 260, 56));
+        retryZone.on('pointerout', () => this.drawBtn(retryBg, 0xFF5EA8, 270, 406, 260, 56));
+        retryZone.on('pointerdown', () => this.restartGame());
 
-        // Zum Menü - Button
-        const menuBtnBg = this.add.graphics();
-        this.drawMenuBtn(menuBtnBg, 0x8B4513);
-
-        this.add.text(400, 455, 'HAUPTMENU', {
-            fontSize: '20px', fontFamily: 'Georgia, serif',
-            color: '#FFFFFF', stroke: '#000', strokeThickness: 3
+        const menuBg = this.add.graphics();
+        this.drawBtn(menuBg, 0x2D6ACB, 300, 474, 200, 44);
+        this.add.text(400, 496, 'HAUPTMENU', {
+            fontSize: '21px',
+            fontFamily: '"Baloo 2"',
+            fontStyle: '700',
+            color: '#FFFFFF'
         }).setOrigin(0.5);
 
-        const menuZone = this.add.zone(400, 455, 220, 44).setInteractive({ useHandCursor: true });
-        menuZone.on('pointerover', () => this.drawMenuBtn(menuBtnBg, 0xA0522D));
-        menuZone.on('pointerout', () => this.drawMenuBtn(menuBtnBg, 0x8B4513));
+        const menuZone = this.add.zone(400, 496, 200, 44).setInteractive({ useHandCursor: true });
+        menuZone.on('pointerover', () => this.drawBtn(menuBg, 0x4A83DF, 300, 474, 200, 44));
+        menuZone.on('pointerout', () => this.drawBtn(menuBg, 0x2D6ACB, 300, 474, 200, 44));
         menuZone.on('pointerdown', () => this.goToMenu());
 
-        // Tastatur-Shortcuts
         this.input.keyboard.on('keydown-SPACE', () => this.restartGame());
         this.input.keyboard.on('keydown-ESC', () => this.goToMenu());
         this.input.keyboard.on('keydown-M', () => this.goToMenu());
 
-        this.add.text(400, 490, 'LEERTASTE = Nochmal  |  M / ESC = Hauptmenu', {
-            fontSize: '11px', fontFamily: 'monospace',
-            color: '#999999', stroke: '#000', strokeThickness: 1
+        this.add.text(400, 542, 'Leertaste = Neustart  |  M / ESC = Menu', {
+            fontSize: '12px',
+            fontFamily: 'Outfit',
+            fontStyle: '600',
+            color: '#D4C7DB'
         }).setOrigin(0.5);
 
-        // Fallende Streusel
         this.time.addEvent({
-            delay: 200,
+            delay: 220,
             callback: () => {
                 const colors = [0xFF69B4, 0xFFD700, 0x87CEEB, 0xDDA0DD, 0xFF6B6B, 0x90EE90];
-                const s = this.add.image(Phaser.Math.Between(50, 750), -10, 'sprinkle');
+                const s = this.add.image(Phaser.Math.Between(40, 760), -10, 'sprinkle');
                 s.setTint(Phaser.Utils.Array.GetRandom(colors));
                 s.setAngle(Phaser.Math.Between(0, 360));
-                s.setScale(Phaser.Math.FloatBetween(1, 2));
+                s.setScale(Phaser.Math.FloatBetween(0.9, 2));
                 this.tweens.add({
-                    targets: s, y: 650,
-                    duration: Phaser.Math.Between(2000, 4000),
-                    angle: s.angle + 180,
+                    targets: s,
+                    y: 640,
+                    duration: Phaser.Math.Between(2400, 4200),
+                    angle: s.angle + 240,
                     onComplete: () => s.destroy()
                 });
             },
@@ -118,20 +135,12 @@ class GameOverScene extends Phaser.Scene {
         });
     }
 
-    drawBtn(bg, color) {
+    drawBtn(bg, color, x, y, w, h) {
         bg.clear();
-        bg.fillStyle(color);
-        bg.fillRoundedRect(275, 370, 250, 50, 12);
-        bg.lineStyle(3, 0xFFD700);
-        bg.strokeRoundedRect(275, 370, 250, 50, 12);
-    }
-
-    drawMenuBtn(bg, color) {
-        bg.clear();
-        bg.fillStyle(color);
-        bg.fillRoundedRect(290, 433, 220, 44, 12);
-        bg.lineStyle(2, 0xFFD700);
-        bg.strokeRoundedRect(290, 433, 220, 44, 12);
+        bg.fillStyle(color, 1);
+        bg.fillRoundedRect(x, y, w, h, 14);
+        bg.lineStyle(2, 0xFFD166, 0.95);
+        bg.strokeRoundedRect(x, y, w, h, 14);
     }
 
     restartGame() {

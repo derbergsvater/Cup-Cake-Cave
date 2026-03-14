@@ -4,6 +4,8 @@ class AudioManager {
         this.ctx = null;
         this.musicGain = null;
         this.sfxGain = null;
+        this.musicFilter = null;
+        this.masterCompressor = null;
         this.musicPlaying = false;
         this.musicNodes = [];
         this.currentTrack = 'zone_pink';
@@ -15,12 +17,26 @@ class AudioManager {
     init() {
         if (this.ctx) return;
         this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        this.masterCompressor = this.ctx.createDynamicsCompressor();
+        this.masterCompressor.threshold.value = -20;
+        this.masterCompressor.knee.value = 20;
+        this.masterCompressor.ratio.value = 3;
+        this.masterCompressor.attack.value = 0.01;
+        this.masterCompressor.release.value = 0.22;
+        this.masterCompressor.connect(this.ctx.destination);
+
         this.musicGain = this.ctx.createGain();
-        this.musicGain.gain.value = 0.25;
-        this.musicGain.connect(this.ctx.destination);
+        this.musicGain.gain.value = 0.14;
+        this.musicFilter = this.ctx.createBiquadFilter();
+        this.musicFilter.type = 'lowpass';
+        this.musicFilter.frequency.value = 1600;
+        this.musicFilter.Q.value = 0.8;
+        this.musicGain.connect(this.musicFilter);
+        this.musicFilter.connect(this.masterCompressor);
+
         this.sfxGain = this.ctx.createGain();
-        this.sfxGain.gain.value = 0.5;
-        this.sfxGain.connect(this.ctx.destination);
+        this.sfxGain.gain.value = 0.42;
+        this.sfxGain.connect(this.masterCompressor);
     }
 
     resume() {
@@ -100,6 +116,22 @@ class AudioManager {
         this._tone(600, 0.05, 'square', 0.15);
         setTimeout(() => this._tone(900, 0.08, 'square', 0.12), 30);
         setTimeout(() => this._tone(1200, 0.1, 'square', 0.1), 70);
+    }
+
+    playSpit() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(720, now);
+        osc.frequency.exponentialRampToValueAtTime(280, now + 0.09);
+        g.gain.setValueAtTime(0.09, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        osc.connect(g);
+        g.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + 0.11);
     }
 
     // --- Sprach-Stimme (Formant-Synthese fuer niedliche Lama-Stimme) ---
@@ -294,6 +326,11 @@ class AudioManager {
     _getSection(track) {
         const sections = this._tracks[track] || this._tracks.zone_pink;
         return sections[this._sectionIndex % sections.length];
+    }
+
+    _musicType(type) {
+        if (type === 'square' || type === 'sawtooth') return 'triangle';
+        return type || 'sine';
     }
 
     // ============================================================
@@ -570,11 +607,12 @@ class AudioManager {
         section.melody.forEach((freq, i) => {
             const osc = this.ctx.createOscillator();
             const g = this.ctx.createGain();
-            osc.type = section.melodyType;
+            osc.type = this._musicType(section.melodyType);
             osc.frequency.value = freq;
-            g.gain.value = section.melodyVol;
-            g.gain.setValueAtTime(section.melodyVol, now + i * t);
-            g.gain.exponentialRampToValueAtTime(0.001, now + (i + 0.85) * t);
+            const melVol = Math.max(0.01, (section.melodyVol || 0.06) * 0.74);
+            g.gain.setValueAtTime(0.001, now + i * t);
+            g.gain.linearRampToValueAtTime(melVol, now + i * t + t * 0.14);
+            g.gain.exponentialRampToValueAtTime(0.001, now + (i + 0.86) * t);
             osc.connect(g); g.connect(this.musicGain);
             osc.start(now + i * t);
             osc.stop(now + (i + 1) * t);
@@ -585,11 +623,12 @@ class AudioManager {
         section.bass.forEach((freq, i) => {
             const osc = this.ctx.createOscillator();
             const g = this.ctx.createGain();
-            osc.type = section.bassType;
+            osc.type = this._musicType(section.bassType);
             osc.frequency.value = freq;
-            g.gain.value = section.bassVol;
-            g.gain.setValueAtTime(section.bassVol, now + i * t);
-            g.gain.exponentialRampToValueAtTime(0.001, now + (i + 0.85) * t);
+            const bassVol = Math.max(0.01, (section.bassVol || 0.08) * 0.66);
+            g.gain.setValueAtTime(0.001, now + i * t);
+            g.gain.linearRampToValueAtTime(bassVol, now + i * t + t * 0.18);
+            g.gain.exponentialRampToValueAtTime(0.001, now + (i + 0.9) * t);
             osc.connect(g); g.connect(this.musicGain);
             osc.start(now + i * t);
             osc.stop(now + (i + 1) * t);
@@ -603,9 +642,9 @@ class AudioManager {
                 const g = this.ctx.createGain();
                 osc.type = 'sine';
                 osc.frequency.value = freq;
-                g.gain.value = 0.03;
-                g.gain.setValueAtTime(0.03, now + i * t);
-                g.gain.exponentialRampToValueAtTime(0.001, now + (i + 0.5) * t);
+                g.gain.value = 0.015;
+                g.gain.setValueAtTime(0.015, now + i * t);
+                g.gain.exponentialRampToValueAtTime(0.001, now + (i + 0.55) * t);
                 osc.connect(g); g.connect(this.musicGain);
                 osc.start(now + i * t);
                 osc.stop(now + (i + 0.6) * t);
@@ -616,16 +655,20 @@ class AudioManager {
         // Perkussion (Noise-Bursts)
         section.perc.forEach((hit, i) => {
             if (!hit) return;
+            if (i % 4 !== 0 && Math.random() < 0.55) return;
             const bufSize = this.ctx.sampleRate * 0.03;
             const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
             const data = buf.getChannelData(0);
             for (let s = 0; s < bufSize; s++) data[s] = (Math.random() * 2 - 1) * 0.3;
             const src = this.ctx.createBufferSource();
             src.buffer = buf;
+            const lp = this.ctx.createBiquadFilter();
+            lp.type = 'lowpass';
+            lp.frequency.value = 1200;
             const g = this.ctx.createGain();
-            g.gain.value = 0.06;
+            g.gain.value = 0.018;
             g.gain.exponentialRampToValueAtTime(0.001, now + i * t + 0.04);
-            src.connect(g); g.connect(this.musicGain);
+            src.connect(lp); lp.connect(g); g.connect(this.musicGain);
             src.start(now + i * t);
             this.musicNodes.push(src);
         });
