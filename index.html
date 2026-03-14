@@ -22,7 +22,11 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            min-height: 100dvh;
             overflow: hidden;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
             color: var(--text);
             background:
                 radial-gradient(circle at 15% 20%, rgba(255, 106, 162, 0.22), transparent 40%),
@@ -62,17 +66,43 @@
                 border: none;
             }
         }
+        #landscape-hint {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(10, 6, 18, 0.95);
+            color: #FFE3B0;
+            font-family: 'Baloo 2', 'Outfit', sans-serif;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 18px;
+            text-align: center;
+            padding: 24px;
+        }
+        #landscape-hint .icon { font-size: 64px; }
+        #landscape-hint .msg { font-size: 22px; font-weight: 700; }
+        #landscape-hint .sub { font-size: 14px; color: #F6D7E8; }
+        @media (max-width: 820px) and (orientation: portrait) {
+            #landscape-hint { display: flex; }
+        }
     </style>
 </head>
 <body>
+    <div id="landscape-hint">
+        <div class="icon">&#x1F4F1;&#x21BB;</div>
+        <div class="msg">Bitte drehe dein Handy ins Querformat!</div>
+        <div class="sub">Das Spiel funktioniert am besten im Landscape-Modus</div>
+    </div>
     <div id="game-container"></div>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
-    <script src="js/audio.js?v=20260314"></script>
-    <script src="js/assets.js?v=20260314"></script>
-    <script src="js/scenes/BootScene.js?v=20260314"></script>
-    <script src="js/scenes/MenuScene.js?v=20260314"></script>
-    <script src="js/scenes/GameScene.js?v=20260314"></script>
-    <script src="js/scenes/GameOverScene.js?v=20260314"></script>
-    <script src="js/game.js?v=20260314"></script>
+    <script src="js/audio.js?v=20260314b"></script>
+    <script src="js/assets.js?v=20260314b"></script>
+    <script src="js/scenes/BootScene.js?v=20260314b"></script>
+    <script src="js/scenes/MenuScene.js?v=20260314b"></script>
+    <script src="js/scenes/GameScene.js?v=20260314b"></script>
+    <script src="js/scenes/GameOverScene.js?v=20260314b"></script>
+    <script src="js/game.js?v=20260314b"></script>
 </body>
 </html>

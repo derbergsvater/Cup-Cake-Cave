@@ -147,6 +147,11 @@ class GameOverScene extends Phaser.Scene {
         window.audioManager.init();
         window.audioManager.resume();
         window.audioManager.startMusic();
+        if (!this.sys.game.device.os.desktop) {
+            const el = document.documentElement;
+            const rfs = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+            if (rfs) rfs.call(el).catch(() => {});
+        }
         this.scene.start('GameScene', { difficulty: this.difficulty });
     }
 

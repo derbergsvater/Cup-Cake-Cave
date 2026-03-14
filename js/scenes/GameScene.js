@@ -218,131 +218,136 @@ class GameScene extends Phaser.Scene {
     }
 
     createHUD() {
+        const mob = this.isMobile;
         const hudBg = this.add.graphics();
         hudBg.fillStyle(0x08060F, 0.58);
-        hudBg.fillRoundedRect(8, 8, 280, 92, 12);
+        hudBg.fillRoundedRect(8, 8, mob ? 220 : 280, mob ? 72 : 92, 12);
         hudBg.lineStyle(1, 0xFFD166, 0.9);
-        hudBg.strokeRoundedRect(8, 8, 280, 92, 12);
+        hudBg.strokeRoundedRect(8, 8, mob ? 220 : 280, mob ? 72 : 92, 12);
         hudBg.setDepth(100).setScrollFactor(0);
 
         this.scoreText = this.add.text(20, 14, 'Punkte: 0', {
-            fontSize: '23px', fontFamily: '"Baloo 2"',
-            color: '#FFE3B0', stroke: '#000', strokeThickness: 2
+            fontSize: mob ? '26px' : '23px', fontFamily: '"Baloo 2"',
+            color: '#FFE3B0', stroke: '#000', strokeThickness: 3
         }).setDepth(100).setScrollFactor(0);
 
-        this.livesText = this.add.text(20, 43, '', {
-            fontSize: '16px', fontFamily: 'Outfit',
-            color: '#FF9DC8', stroke: '#000', strokeThickness: 2
+        this.livesText = this.add.text(20, mob ? 46 : 43, '', {
+            fontSize: mob ? '18px' : '16px', fontFamily: 'Outfit',
+            color: '#FF9DC8', stroke: '#000', strokeThickness: 3
         }).setDepth(100).setScrollFactor(0);
         this.updateLivesDisplay();
 
-        this.powerUpText = this.add.text(20, 69, '', {
-            fontSize: '13px', fontFamily: 'Outfit',
+        this.powerUpText = this.add.text(20, mob ? 68 : 69, '', {
+            fontSize: mob ? '15px' : '13px', fontFamily: 'Outfit',
             color: '#9FE8FF', stroke: '#000', strokeThickness: 2
         }).setDepth(100).setScrollFactor(0);
 
         const rightBg = this.add.graphics();
         rightBg.fillStyle(0x08060F, 0.58);
-        rightBg.fillRoundedRect(520, 8, 272, 82, 12);
+        rightBg.fillRoundedRect(mob ? 560 : 520, 8, mob ? 232 : 272, mob ? 72 : 82, 12);
         rightBg.lineStyle(1, 0xFFD166, 0.9);
-        rightBg.strokeRoundedRect(520, 8, 272, 82, 12);
+        rightBg.strokeRoundedRect(mob ? 560 : 520, 8, mob ? 232 : 272, mob ? 72 : 82, 12);
         rightBg.setDepth(100).setScrollFactor(0);
 
         this.distanceText = this.add.text(780, 14, 'Distanz: 0m', {
-            fontSize: '17px', fontFamily: 'Outfit',
-            color: '#FFFFFF', stroke: '#000', strokeThickness: 2
+            fontSize: mob ? '19px' : '17px', fontFamily: 'Outfit',
+            color: '#FFFFFF', stroke: '#000', strokeThickness: 3
         }).setOrigin(1, 0).setDepth(100).setScrollFactor(0);
 
-        this.zoneText = this.add.text(780, 39, '', {
-            fontSize: '13px', fontFamily: 'Outfit',
-            color: '#FFB6D7', stroke: '#000', strokeThickness: 2
+        this.zoneText = this.add.text(780, mob ? 40 : 39, '', {
+            fontSize: mob ? '15px' : '13px', fontFamily: 'Outfit',
+            color: '#FFB6D7', stroke: '#000', strokeThickness: 3
         }).setOrigin(1, 0).setDepth(100).setScrollFactor(0);
 
-        this.spitText = this.add.text(780, 58, '', {
-            fontSize: '12px', fontFamily: 'Outfit',
+        this.spitText = this.add.text(780, mob ? 60 : 58, '', {
+            fontSize: mob ? '14px' : '12px', fontFamily: 'Outfit',
             color: '#A8F5FF', stroke: '#000', strokeThickness: 2
         }).setOrigin(1, 0).setDepth(100).setScrollFactor(0);
 
         const diffColors = { einfach: '#6BCB77', mittel: '#FFD700', schwer: '#FF4040' };
-        this.add.text(780, 74, this.diff.label, {
-            fontSize: '11px', fontFamily: 'Outfit',
-            color: diffColors[this.difficulty] || '#FFFFFF',
-            stroke: '#000', strokeThickness: 2
-        }).setOrigin(1, 0).setDepth(100).setScrollFactor(0);
+        if (!mob) {
+            this.add.text(780, 74, this.diff.label, {
+                fontSize: '11px', fontFamily: 'Outfit',
+                color: diffColors[this.difficulty] || '#FFFFFF',
+                stroke: '#000', strokeThickness: 2
+            }).setOrigin(1, 0).setDepth(100).setScrollFactor(0);
+        }
 
         this.updateSpitStatusText();
     }
 
     createTouchControls() {
-        const btnAlpha = 0.35;
+        const btnAlpha = 0.45;
         const btnDepth = 150;
+        const btnY = 510;
 
         // --- Linker Bereich: Richtungstasten ---
         // Links-Button
         const btnLeft = this.add.graphics();
         btnLeft.fillStyle(0xFFFFFF, btnAlpha);
-        btnLeft.fillRoundedRect(10, 480, 70, 70, 12);
+        btnLeft.fillRoundedRect(8, btnY - 40, 80, 80, 14);
         btnLeft.setDepth(btnDepth).setScrollFactor(0);
-        const lblLeft = this.add.text(45, 515, '\u25C0', {
-            fontSize: '32px', color: '#FFFFFF'
-        }).setOrigin(0.5).setDepth(btnDepth + 1).setScrollFactor(0).setAlpha(0.6);
+        const lblLeft = this.add.text(48, btnY, '\u25C0', {
+            fontSize: '38px', color: '#FFFFFF'
+        }).setOrigin(0.5).setDepth(btnDepth + 1).setScrollFactor(0).setAlpha(0.7);
 
         // Rechts-Button
         const btnRight = this.add.graphics();
         btnRight.fillStyle(0xFFFFFF, btnAlpha);
-        btnRight.fillRoundedRect(90, 480, 70, 70, 12);
+        btnRight.fillRoundedRect(98, btnY - 40, 80, 80, 14);
         btnRight.setDepth(btnDepth).setScrollFactor(0);
-        const lblRight = this.add.text(125, 515, '\u25B6', {
-            fontSize: '32px', color: '#FFFFFF'
-        }).setOrigin(0.5).setDepth(btnDepth + 1).setScrollFactor(0).setAlpha(0.6);
+        const lblRight = this.add.text(138, btnY, '\u25B6', {
+            fontSize: '38px', color: '#FFFFFF'
+        }).setOrigin(0.5).setDepth(btnDepth + 1).setScrollFactor(0).setAlpha(0.7);
 
-        // --- Rechter Bereich: Sprung-Button ---
+        // --- Rechter Bereich: Sprung-Button (gross) ---
         const btnJump = this.add.graphics();
         btnJump.fillStyle(0xFF69B4, btnAlpha);
-        btnJump.fillCircle(730, 515, 45);
+        btnJump.fillCircle(740, btnY, 52);
         btnJump.setDepth(btnDepth).setScrollFactor(0);
-        const lblJump = this.add.text(730, 515, '\u25B2', {
-            fontSize: '36px', color: '#FFFFFF'
-        }).setOrigin(0.5).setDepth(btnDepth + 1).setScrollFactor(0).setAlpha(0.6);
+        const lblJump = this.add.text(740, btnY, '\u25B2', {
+            fontSize: '42px', color: '#FFFFFF'
+        }).setOrigin(0.5).setDepth(btnDepth + 1).setScrollFactor(0).setAlpha(0.7);
 
+        // --- Spuck-Button (mit Abstand zum Sprung-Button) ---
         const btnSpit = this.add.graphics();
         btnSpit.fillStyle(0x61D8F0, btnAlpha);
-        btnSpit.fillCircle(640, 515, 35);
+        btnSpit.fillCircle(620, btnY, 42);
         btnSpit.setDepth(btnDepth).setScrollFactor(0);
-        const lblSpit = this.add.text(640, 515, '\uD83D\uDCA6', {
-            fontSize: '28px', fontFamily: 'Outfit', color: '#FFFFFF'
+        const lblSpit = this.add.text(620, btnY, '\uD83D\uDCA6', {
+            fontSize: '32px', fontFamily: 'Outfit', color: '#FFFFFF'
         }).setOrigin(0.5).setDepth(btnDepth + 1).setScrollFactor(0).setAlpha(0.8);
 
-        // Unsichtbare interaktive Zonen fuer Touch
-        const zoneLeft = this.add.zone(45, 515, 80, 80)
+        // Groessere interaktive Zonen fuer Touch (leichter zu treffen)
+        const zoneLeft = this.add.zone(48, btnY, 96, 96)
             .setScrollFactor(0).setDepth(btnDepth + 2).setInteractive();
-        const zoneRight = this.add.zone(125, 515, 80, 80)
+        const zoneRight = this.add.zone(138, btnY, 96, 96)
             .setScrollFactor(0).setDepth(btnDepth + 2).setInteractive();
-        const zoneJump = this.add.zone(730, 515, 100, 100)
+        const zoneJump = this.add.zone(740, btnY, 116, 116)
             .setScrollFactor(0).setDepth(btnDepth + 2).setInteractive();
-        const zoneSpit = this.add.zone(640, 515, 80, 80)
+        const zoneSpit = this.add.zone(620, btnY, 96, 96)
             .setScrollFactor(0).setDepth(btnDepth + 2).setInteractive();
 
         // Touch-Events
-        zoneLeft.on('pointerdown', () => { this.touchLeft = true; btnLeft.setAlpha(0.7); });
+        zoneLeft.on('pointerdown', () => { this.touchLeft = true; btnLeft.setAlpha(0.8); });
         zoneLeft.on('pointerup', () => { this.touchLeft = false; btnLeft.setAlpha(1); });
         zoneLeft.on('pointerout', () => { this.touchLeft = false; btnLeft.setAlpha(1); });
 
-        zoneRight.on('pointerdown', () => { this.touchRight = true; btnRight.setAlpha(0.7); });
+        zoneRight.on('pointerdown', () => { this.touchRight = true; btnRight.setAlpha(0.8); });
         zoneRight.on('pointerup', () => { this.touchRight = false; btnRight.setAlpha(1); });
         zoneRight.on('pointerout', () => { this.touchRight = false; btnRight.setAlpha(1); });
 
         zoneJump.on('pointerdown', () => {
             this.touchJump = true;
             this.touchJumpJustPressed = true;
-            btnJump.setAlpha(0.7);
+            btnJump.setAlpha(0.8);
         });
         zoneJump.on('pointerup', () => { this.touchJump = false; btnJump.setAlpha(1); });
         zoneJump.on('pointerout', () => { this.touchJump = false; btnJump.setAlpha(1); });
 
         zoneSpit.on('pointerdown', () => {
             this.touchSpitJustPressed = true;
-            btnSpit.setAlpha(0.7);
+            btnSpit.setAlpha(0.8);
         });
         zoneSpit.on('pointerup', () => { btnSpit.setAlpha(1); });
         zoneSpit.on('pointerout', () => { btnSpit.setAlpha(1); });
@@ -851,10 +856,12 @@ class GameScene extends Phaser.Scene {
     updateSpitStatusText() {
         const ready = this.spitCooldown <= 0;
         const seconds = Math.max(0, this.spitCooldown / 1000).toFixed(1);
-        const status = ready ? 'Spucke: bereit (F)' : `Spucke: ${seconds}s`;
-        if (status !== this.lastSpitStatus) {
-            this.lastSpitStatus = status;
-            this.spitText.setText(status);
+        const label = ready
+            ? (this.isMobile ? 'Spucke: bereit' : 'Spucke: bereit (F)')
+            : `Spucke: ${seconds}s`;
+        if (label !== this.lastSpitStatus) {
+            this.lastSpitStatus = label;
+            this.spitText.setText(label);
         }
     }
 

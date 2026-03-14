@@ -218,6 +218,18 @@ class MenuScene extends Phaser.Scene {
         window.audioManager.init();
         window.audioManager.resume();
         window.audioManager.startMusic();
+        // Fullscreen auf Mobilgeraeten anfordern
+        if (!this.sys.game.device.os.desktop) {
+            const el = document.documentElement;
+            const rfs = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+            if (rfs) {
+                rfs.call(el).catch(() => {});
+                // Landscape erzwingen wenn moeglich
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(() => {});
+                }
+            }
+        }
         this.scene.start('GameScene', { difficulty: this.selectedDifficulty });
     }
 }
