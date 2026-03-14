@@ -40,7 +40,19 @@ class AudioManager {
     }
 
     resume() {
-        if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+        if (!this.ctx) return;
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+        // iOS erfordert einen kurzen stillen Buffer um Audio freizuschalten
+        if (!this._unlocked) {
+            this._unlocked = true;
+            const buf = this.ctx.createBuffer(1, 1, 22050);
+            const src = this.ctx.createBufferSource();
+            src.buffer = buf;
+            src.connect(this.ctx.destination);
+            src.start(0);
+        }
     }
 
     // --- Sound Effects ---
